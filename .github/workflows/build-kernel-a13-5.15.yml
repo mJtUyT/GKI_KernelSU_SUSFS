@@ -128,7 +128,7 @@ jobs:
           # Sync repo and apply patches
           $REPO --version
           $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
-
+          
       - name: Determine the branch for kernelsu
         run: |
           if [[ "${{ inputs.next_branch }}" == "Stable" ]]; then
@@ -148,7 +148,7 @@ jobs:
           cd "$CONFIG"
           
           echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
 
       - name: Apply SUSFS Patches
         run: |
@@ -158,12 +158,12 @@ jobs:
           echo "Applying SUSFS patches..."
           
           # Copy SUSFS patches
-          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU-Next/
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
-          cd ./KernelSU
+          cd ./KernelSU-Next
           
           # Apply SUSFS patch for KernelSU
           patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
