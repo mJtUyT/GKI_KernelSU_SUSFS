@@ -148,7 +148,7 @@ jobs:
           cd "$CONFIG"
           
           echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash - $BRANCH
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
 
       - name: Apply SUSFS Patches
         run: |
