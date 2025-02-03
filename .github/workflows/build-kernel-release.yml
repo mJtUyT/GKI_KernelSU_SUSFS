@@ -37,6 +37,14 @@ on:
         required: true
         type: boolean
         default: false
+      lto_type:
+        description: "Choose the lto type will fail on full if using a github hosted runner"
+        required: true
+        type: choice
+        options:
+          - none
+          - thin
+          - full
 
 jobs:
   build-kernel-a12-5-10:
