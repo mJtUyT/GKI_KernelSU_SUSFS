@@ -1,7 +1,7 @@
 name: Build Android 13 5.15 GKI Kernels
 
 on:
-  workflow_call:
+  workflow_call:  # This allows this workflow to be called from another workflow
     inputs:
       lto_type:
         required: true
@@ -16,6 +16,7 @@ on:
 jobs:
   build-kernel-a13-5-15-kernelsu-susfs:
     runs-on: ubuntu-22.04
+    timeout-minutes: 150 #将超时时间设置为150分钟
     strategy:
       matrix:
         include:
@@ -30,7 +31,7 @@ jobs:
         with:
           root-reserve-mb: 8192
           temp-reserve-mb: 2048
-          swap-size-mb: 8192
+          swap-size-mb: 20000
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
@@ -131,6 +132,7 @@ jobs:
             exit 1
           fi
 
+       
       - name: Add KernelSU
         run: |
           echo "Changing to configuration directory: $CONFIG..."
@@ -206,7 +208,9 @@ jobs:
           
           echo "Running sed commands..."
           
-          # Run sed commands for modifications
+          # 手动修改为预期内容
+          
+                    # Run sed commands for modifications
           sed -i 's/check_defconfig//' ./common/build.config.gki
           sed -i '$s|echo "\$res"|echo "-android13-8-SUSFS-mJtUyT"|' ./common/scripts/setlocalversion
           sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
@@ -291,3 +295,10 @@ jobs:
           path: |
             *.zip
             *.img
+
+      - name: Clear GitHub Workspace
+        if: ${{ inputs.runner == 'ubuntu-22.04-local' }}
+        run: |
+          echo "Clearing the GitHub workspace..."
+          rm -rf $GITHUB_WORKSPACE/*
+          echo "Workspace cleared."
