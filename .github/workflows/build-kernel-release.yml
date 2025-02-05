@@ -4,7 +4,7 @@ permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
   actions: write   # Allows triggering actions
   
-no:
+on:
  workflow_dispatch:
     inputs:
       build_a12_5_10:
