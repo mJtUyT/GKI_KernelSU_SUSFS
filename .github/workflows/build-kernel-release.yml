@@ -4,8 +4,7 @@ permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
   actions: write   # Allows triggering actions
   
-on:
- workflow_dispatch:
+workflow_dispatch:
     inputs:
       build_a12_5_10:
         description: 'Build Android 12 5.10 kernel?'
