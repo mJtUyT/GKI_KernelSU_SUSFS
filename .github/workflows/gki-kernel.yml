@@ -274,7 +274,7 @@ jobs:
 
           # Remove check_defconfig
           sed -i 's/check_defconfig//' ./common/build.config.gki
-          
+          sed -i '$s|echo "\$res"|echo "-android13-8-SUSFS-mJtUyT"|' ./common/scripts/setlocalversion
       - name: Build the Kernel
         run: |
           echo "Changing to configuration directory: $CONFIG..."
