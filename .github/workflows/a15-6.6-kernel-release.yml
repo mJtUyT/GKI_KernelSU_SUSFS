@@ -1,4 +1,4 @@
-name: a15-6.6 Release GKI Kernels
+name: Release a15-6.6 GKI Kernels
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
