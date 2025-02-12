@@ -1,4 +1,4 @@
-name: Release a15-6.6 GKI Kernels
+name: a15-6.6 Release GKI Kernels
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       build_a15_6_6:
-        description: 'Build Android 14 6.6 kernel?'
+        description: 'Build Android 15 6.6 kernel?'
         required: true
         type: boolean
         default: true
@@ -59,7 +59,7 @@ jobs:
       lto_type: ${{ inputs.lto_type }}
       next_branch: ${{ inputs.next_branch }}
       next_branch_other: ${{ inputs.next_branch_other }}
-
+     
   trigger-release:
     runs-on: ubuntu-latest
     needs:
