@@ -166,7 +166,7 @@ jobs:
             exit 1
           fi
 
-- name: Determine the branch for Rksu
+      - name: Determine the branch for Rksu
         if: ${{ inputs.kernelsu_variant == 'Rksu' }}
         run: |
           if [[ "${{ inputs.kernelsu_branch }}" == "Stable" ]]; then
