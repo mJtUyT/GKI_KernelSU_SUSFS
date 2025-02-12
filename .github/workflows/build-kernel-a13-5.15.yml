@@ -1,12 +1,33 @@
 name: Build Android 13 5.15 GKI Kernels
 
 on:
-  workflow_call:  # This allows this workflow to be called from another workflow
+  workflow_call: # This allows this workflow to be called from another workflow
     inputs:
-      next_branch:
+      android_version:
         required: true
         type: string
-      next_branch_other:
+      kernel_version:
+        required: true
+        type: string
+      sub_level:
+        required: true
+        type: string
+      os_patch_level:
+        required: true
+        type: string
+      runner:
+        required: true
+        type: string
+      lto_type:
+        required: true
+        type: string
+      kernelsu_variant:
+        required: true
+        type: string
+      kernelsu_branch:
+        required: true
+        type: string
+      kernelsu_branch_other:
         required: false
         type: string
   
