@@ -14,7 +14,7 @@ on:
         type: string
   
 jobs:
-  build-kernel-a13-5-15-kernelsu-susfs:
+  build-kernel-a15-6-6-kernelsu-susfs:
     runs-on: ubuntu-22.04
     timeout-minutes: 150 #将超时时间设置为150分钟
     strategy:
@@ -317,10 +317,9 @@ jobs:
           echo "Running sed commands..."
           
           # Run sed commands for modifications
+          
           sed -i 's/check_defconfig//' ./common/build.config.gki
           sed -i '$s|echo "\$res"|echo "-android15-8-SUSFS-mJtUyT"|' ./common/scripts/setlocalversion
-          sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
-          sed -i 's/-dirty//' ./common/scripts/setlocalversion
           
           # Run perl command to modify UTS_VERSION
           perl -pi -e 's{UTS_VERSION="\$\(echo \$UTS_VERSION \$CONFIG_FLAGS \$TIMESTAMP \| cut -b -\$UTS_LEN\)"}{UTS_VERSION="#1 SMP PREEMPT Sat Apr 20 04:20:00 UTC 2024"}' ./common/scripts/mkcompile_h
