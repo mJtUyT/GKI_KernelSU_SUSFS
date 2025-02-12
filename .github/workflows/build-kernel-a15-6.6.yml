@@ -21,6 +21,7 @@ on:
 
 jobs:
   build-kernel-a15-6-6-kernelsu-susfs:
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
@@ -411,4 +412,3 @@ jobs:
           echo "Clearing the GitHub workspace..."
           rm -rf $GITHUB_WORKSPACE/*
           echo "Workspace cleared."
-
