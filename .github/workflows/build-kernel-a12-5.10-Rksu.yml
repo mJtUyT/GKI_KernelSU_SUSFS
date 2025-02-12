@@ -226,7 +226,7 @@ jobs:
           # Revert commit of remove pts_unix98_lookup_pre
           cd KernelSU
           git revert -m 1 $(git log --grep="remove devpts hook" --pretty=format:"%h") -n
-          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12066)
+          #KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12066)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
 
@@ -313,14 +313,19 @@ jobs:
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-
+          
           cd ./KernelSU
           echo "Applying SUSFS patches..."
-          patch -p1 --forward < 10_enable_susfs_for_ksu.patch
+          patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
+          
+          echo "Applying mksu_susfs.patch"
+          cp ../../kernel_patches/mksu_susfs.patch ../KernelSU/
+          patch -p1 < mksu_susfs.patch
 
           # Change to common directory and apply SUSFS patch
           cd ../common
           patch -p1 < 50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch || true
+
 
       - name: Apply Hide Stuff Patches
         run: |
