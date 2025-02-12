@@ -51,6 +51,42 @@ jobs:
             kernel_version: "5.10"
             sub_level: "X"
             os_patch_level: "lts"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "94"
+            os_patch_level: "2023-05"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "123"
+            os_patch_level: "2023-11"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "137"
+            os_patch_level: "2024-01"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "144"
+            os_patch_level: "2024-03"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "148"
+            os_patch_level: "2024-05"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "149"
+            os_patch_level: "2024-07"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "151"
+            os_patch_level: "2024-08"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "167"
+            os_patch_level: "2024-11"
+          - android_version: "android13"
+            kernel_version: "5.15"
+            sub_level: "X"
+            os_patch_level: "lts"
 
     steps:
       - name: Maximize build space
@@ -205,6 +241,15 @@ jobs:
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12063)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+     
+      - name: Add KernelSU-Next
+        if: ${{ inputs.kernelsu_variant == 'Next' }}
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          echo "Adding KernelSU..."
+          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
 
       - name: Apply SUSFS Patches KernelSU
         if: ${{ inputs.kernelsu_variant == 'Official' }}
