@@ -7,6 +7,31 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
+      build_a12_5_10:
+        description: 'Build Android 12 5.10 kernel?'
+        required: true
+        type: boolean
+        default: true
+      build_a13_5_10:
+        description: 'Build Android 13 5.10 kernel?'
+        required: true
+        type: boolean
+        default: true
+      build_a13_5_15:
+        description: 'Build Android 13 5.15 kernel?'
+        required: true
+        type: boolean
+        default: true
+      build_a14_5_15:
+        description: 'Build Android 14 5.15 kernel?'
+        required: true
+        type: boolean
+        default: true
+      build_a14_6_1:
+        description: 'Build Android 14 6.1 kernel?'
+        required: true
+        type: boolean
+        default: true
       make_release:
         description: 'Do you want to create a release?'
         required: true
