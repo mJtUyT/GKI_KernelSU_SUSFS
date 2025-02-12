@@ -1,4 +1,4 @@
-name: a12 Release GKI Kernels
+name: Build and Release a12 GKI Kernels
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
