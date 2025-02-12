@@ -32,6 +32,11 @@ on:
         required: true
         type: boolean
         default: true
+      build_a14_6_6:
+        description: 'Build Android 14 6.6 kernel?'
+        required: true
+        type: boolean
+        default: true
       make_release:
         description: 'Do you want to create a release?'
         required: true
@@ -115,6 +120,15 @@ jobs:
       lto_type: ${{ inputs.lto_type }}
       next_branch: ${{ inputs.next_branch }}
       next_branch_other: ${{ inputs.next_branch_other }}
+     
+  build-kernel-a14-6-6:
+    uses: ./.github/workflows/build-kernel-a15-6.6.yml
+    secrets: inherit
+    if: ${{ inputs.build_a14_6_6 }}
+    with:
+      lto_type: ${{ inputs.lto_type }}
+      next_branch: ${{ inputs.next_branch }}
+      next_branch_other: ${{ inputs.next_branch_other }}
 
   trigger-release:
     runs-on: ubuntu-latest
@@ -124,6 +138,7 @@ jobs:
         - build-kernel-a13-5-15
         - build-kernel-a14-5-15
         - build-kernel-a14-6-1
+        - build-kernel-a15-6-6
     if: ${{ inputs.make_release }}
     env:
       REPO_OWNER: TheWildJames
@@ -131,7 +146,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE_NAME: "*TEST BUILD* GKI Kernels With KernelSU Next & SUSFS v1.5.4 *TEST BUILD*"
       RELEASE_NOTES: |
-        This release contains KernelSU Next and SUSFS v1.5.4
+        This release contains KernelSU Next and SUSFS v1.5.5
         
         Module: 
         -> https://github.com/sidex15/ksu_module_susfs
@@ -149,7 +164,7 @@ jobs:
         
         Features:
         [+] KernelSU-Next
-        [+] SUSFS v1.5.4
+        [+] SUSFS v1.5.5
         [+] Wireguard Support
         [+] Maphide LineageOS Detections
         [+] Futile Maphide for jit-zygote-cache Detections
