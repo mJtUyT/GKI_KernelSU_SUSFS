@@ -214,7 +214,7 @@ jobs:
           echo "Adding KernelSU..."
           curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
 
-- name: Add KernelSU-Rksu
+      - name: Add KernelSU-Rksu
         if: ${{ inputs.kernelsu_variant == 'Rksu' }}
         run: |
           echo "Changing to configuration directory: $CONFIG..."
