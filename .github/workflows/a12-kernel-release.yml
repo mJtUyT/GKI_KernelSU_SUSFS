@@ -12,6 +12,11 @@ on:
         required: true
         type: boolean
         default: true
+      make_release:
+        description: 'Do you want to create a release?'
+        required: true
+        type: boolean
+        default: false
       lto_type:
         description: "Choose the lto type will fail on full if using a github hosted runner"
         required: true
