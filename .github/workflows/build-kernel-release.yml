@@ -7,7 +7,7 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-            build_a12_5_10:
+      build_a12_5_10:
         description: 'Build Android 12 5.10 kernel?'
         required: true
         type: boolean
