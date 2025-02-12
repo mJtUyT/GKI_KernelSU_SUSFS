@@ -1,4 +1,4 @@
-name: Android 15 6.6
+name: Build Android 15 6.6 GKI Kernels
 
 on:
   workflow_call:  # This allows this workflow to be called from another workflow
