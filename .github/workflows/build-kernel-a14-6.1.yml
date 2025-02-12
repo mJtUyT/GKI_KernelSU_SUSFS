@@ -162,61 +162,129 @@ jobs:
           $REPO --version
           $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
 
-      - name: Determine the branch for kernelsu
+      - name: Determine the branch for KernelSU & MKSU
+        if: ${{ inputs.kernelsu_variant == 'Official' || inputs.kernelsu_variant == 'MKSU' }}
         run: |
-          if [[ "${{ inputs.next_branch }}" == "Stable" ]]; then
+          if [[ "${{ inputs.kernelsu_branch }}" == "Stable" ]]; then
             echo "BRANCH=-" >> $GITHUB_ENV
-          elif [[ "${{ inputs.next_branch }}" == "Dev" ]]; then
+          elif [[ "${{ inputs.kernelsu_branch }}" == "Dev" ]]; then
+            echo "BRANCH=-s main" >> $GITHUB_ENV
+          elif [[ "${{ inputs.kernelsu_branch }}" == "Other" && -n "${{ inputs.kernelsu_branch_other }}" ]]; then
+            echo "BRANCH=-s ${{ inputs.kernelsu_branch_other }}" >> $GITHUB_ENV
+          else
+            echo "Error: Custom branch not provided for 'Other'" >&2
+            exit 1
+          fi
+          
+      - name: Determine the branch for kernelsu-next
+        if: ${{ inputs.kernelsu_variant == 'Next' }}
+        run: |
+          if [[ "${{ inputs.kernelsu_branch }}" == "Stable" ]]; then
+            echo "BRANCH=-" >> $GITHUB_ENV
+          elif [[ "${{ inputs.kernelsu_branch }}" == "Dev" ]]; then
             echo "BRANCH=-s next" >> $GITHUB_ENV
-          elif [[ "${{ inputs.next_branch }}" == "Other" && -n "${{ inputs.next_branch_other }}" ]]; then
-            echo "BRANCH=-s ${{ inputs.next_branch_other }}" >> $GITHUB_ENV
+          elif [[ "${{ inputs.kernelsu_branch }}" == "Other" && -n "${{ inputs.kernelsu_branch_other }}" ]]; then
+            echo "BRANCH=-s ${{ inputs.kernelsu_branch_other }}" >> $GITHUB_ENV
           else
             echo "Error: Custom branch not provided for 'Other'" >&2
             exit 1
           fi
 
-      - name: Add KernelSU
-        run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          cd "$CONFIG"
-          
-          echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
 
-      - name: Apply SUSFS Patches
+      - name: Add KernelSU-Official
+        if: ${{ inputs.kernelsu_variant == 'Official' }}
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
-          
+
+          echo "Adding KernelSU..."
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+
+      - name: Add KernelSU-MKSU
+        if: ${{ inputs.kernelsu_variant == 'MKSU' }}
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          echo "Adding KernelSU..."
+          curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+
+          # Revert commit of remove pts_unix98_lookup_pre
+          cd KernelSU
+          git revert -m 1 $(git log --grep="remove devpts hook" --pretty=format:"%h") -n
+          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12063)
+          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+          sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+
+      - name: Apply SUSFS Patches KernelSU
+        if: ${{ inputs.kernelsu_variant == 'Official' }}
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
           echo "Applying SUSFS patches..."
-          
+
           # Copy SUSFS patches
-          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU-Next/
+          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch ./common/
+          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
+          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+
+          cd ./KernelSU
+          echo "Applying SUSFS patches..."
+          patch -p1 --forward < 10_enable_susfs_for_ksu.patch
+
+          # Change to common directory and apply SUSFS patch
+          cd ../common
+          patch -p1 < 50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch || true
+
+      - name: Apply SUSFS Patches KernelSU-Next
+        if: ${{ inputs.kernelsu_variant == 'Next' }}
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          echo "Applying SUSFS patches..."
+
+          # Copy SUSFS patches
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
           cd ./KernelSU-Next
-          
-          # Apply SUSFS patch for KernelSU
-          patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
-          
+          echo "Applying next SUSFS patches..."
+          cp ../../kernel_patches/KernelSU-Next-Implement-SUSFS-v1.5.5-Universal.patch ./
+          patch -p1 --forward < KernelSU-Next-Implement-SUSFS-v1.5.5-Universal.patch || true
+
           # Change to common directory and apply SUSFS patch
           cd ../common
           patch -p1 < 50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch || true
-          
-      - name: Apply Next-SUSFS Patches
+
+      - name: Apply SUSFS Patches MKSU
+        if: ${{ inputs.kernelsu_variant == 'MKSU' }}
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
+
+          echo "Applying SUSFS patches..."
+
+          # Copy SUSFS patches
+          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch ./common/
+          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
+          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
           
-          echo "Applying next SUSFS patches..."
-          cp ../kernel_patches/apk_sign.c_fix.patch ./
-          patch -p1 -F 3 < apk_sign.c_fix.patch
-          cp ../kernel_patches/core_hook.c_fix.patch ./
-          patch -p1 --fuzz=3 < core_hook.c_fix.patch
-          cp ../kernel_patches/selinux.c_fix.patch ./
-          patch -p1 -F 3 < selinux.c_fix.patch
+          cd ./KernelSU
+          echo "Applying SUSFS patches..."
+          patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
+          
+          echo "Applying mksu_susfs.patch"
+          cp ../../kernel_patches/mksu_susfs.patch ../KernelSU/
+          patch -p1 < mksu_susfs.patch
+
+          # Change to common directory and apply SUSFS patch
+          cd ../common
+          patch -p1 < 50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch || true
 
       - name: Apply Hide Stuff Patches
         run: |
@@ -224,15 +292,15 @@ jobs:
           cd "$CONFIG/common"
           # Apply additional patch
           cp ../../kernel_patches/69_hide_stuff.patch ./
-          patch -p1 -F 3 < 69_hide_stuff.patch || true
+          patch -p1 -F 3 < 69_hide_stuff.patch
 
       - name: Add SUSFS Configuration Settings
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
-          
+
           echo "Adding configuration settings to gki_defconfig..."
-          
+
           # Add SUSFS configuration settings
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -251,9 +319,14 @@ jobs:
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
+
           # Add additional tmpfs config setting
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
+
+          # Remove check_defconfig
+          sed -i 's/check_defconfig//' ./common/build.config.gki
+
+
 
       - name: Run sed and perl Commands
         run: |
@@ -264,11 +337,13 @@ jobs:
           
           # Run sed commands for modifications
           sed -i 's/check_defconfig//' ./common/build.config.gki
-          sed -i '$s|echo "\$res"|echo "\$res-Wild+"|' ./common/scripts/setlocalversion
+          sed -i '$s|echo "\$res"|echo "-android14-11-SUSFS-mJtUyT"|' ./common/scripts/setlocalversion
           sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
-
+          sed -i 's/-dirty//' ./common/scripts/setlocalversion
+          
           # Run perl command to modify UTS_VERSION
           perl -pi -e 's{UTS_VERSION="\$\(echo \$UTS_VERSION \$CONFIG_FLAGS \$TIMESTAMP \| cut -b -\$UTS_LEN\)"}{UTS_VERSION="#1 SMP PREEMPT Sat Apr 20 04:20:00 UTC 2024"}' ./common/scripts/mkcompile_h
+         
 
       - name: Build the Kernel
         run: |
@@ -276,8 +351,7 @@ jobs:
           cd "$CONFIG"
           
           echo "Building the kernel..."
-          rm -rf ./common/android/abi_gki_protected_exports_*
-          tools/bazel build --config=fast --lto=${{ inputs.lto_type }} //common:kernel_aarch64_dist
+          LTO=${{ inputs.lto_type }} BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
 
       - name: Create Bootimgs Folder and Copy Images
         run: |
@@ -285,10 +359,10 @@ jobs:
           mkdir bootimgs
           
           echo "Creating bootimgs folder and copying images..."
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./
+          cp ./$CONFIG/out/${{ matrix.android_version }}-${{ matrix.kernel_version }}/dist/Image ./bootimgs
+          cp ./$CONFIG/out/${{ matrix.android_version }}-${{ matrix.kernel_version }}/dist/Image.lz4 ./bootimgs
+          cp ./$CONFIG/out/${{ matrix.android_version }}-${{ matrix.kernel_version }}/dist/Image ./
+          cp ./$CONFIG/out/${{ matrix.android_version }}-${{ matrix.kernel_version }}/dist/Image.lz4 ./
           
           # Create gzip of the Image file
           gzip -n -k -f -9 ./Image > ./Image.gz
@@ -333,7 +407,7 @@ jobs:
           zip -r "../$ZIP_NAME" ./*
           rm ./Image.lz4
 
-          ZIP_NAME="${{ matrix.kernel_version }}.${{ matrix.sub_level }}-${{ matrix.android_version }}-${{ matrix.os_patch_level }}-AnyKernel3-gz.zip"
+          ZIP_NAME="${{ matrix.kernel_version }}.${{ matrix.sub_level }}-${{ matrix.android_version }}-${{ matrix.os_patch_level }}AnyKernel3-gz.zip"
           echo "Creating zip file: $ZIP_NAME..."
           mv ../Image.gz ./Image.gz
           zip -r "../$ZIP_NAME" ./*
