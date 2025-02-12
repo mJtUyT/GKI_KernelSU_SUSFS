@@ -20,14 +20,14 @@ jobs:
     strategy:
       matrix:
         include:
-          #- android_version: "android15"
-          #  kernel_version: "6.6"
-          #  sub_level: "30"
-          #  os_patch_level: "2024-8"
-          #- android_version: "android15"
-          #  kernel_version: "6.6"
-          #  sub_level: "46"
-          #  os_patch_level: "2024-09"
+          - android_version: "android15"
+            kernel_version: "6.6"
+            sub_level: "30"
+            os_patch_level: "2024-8"
+          - android_version: "android15"
+            kernel_version: "6.6"
+            sub_level: "46"
+            os_patch_level: "2024-09"
           - android_version: "android15"
             kernel_version: "6.6"
             sub_level: "50"
@@ -331,8 +331,14 @@ jobs:
           cd "$CONFIG"
           
           echo "Building the kernel..."
-          LTO=${{ inputs.lto_type }} BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
-
+          if [ -f "build/build.sh" ]; then
+            sed -i 's/-dirty//' ./common/scripts/setlocalversion
+            LTO=${{ inputs.lto_type }} BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
+          else
+            rm -rf ./common/android/abi_gki_protected_exports_*
+            sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
+            tools/bazel build --config=fast --lto=${{ inputs.lto_type }} //common:kernel_aarch64_dist
+          fi
       - name: Create Bootimgs Folder and Copy Images
         run: |
           echo "Changing to configuration directory: $CONFIG..."
