@@ -17,6 +17,11 @@ on:
         required: true
         type: boolean
         default: true
+      build_OnePlus12_6_1:
+        description: 'Build OnePlus12 6.1 kernel?'
+        required: true
+        type: boolean
+        default: true
       make_release:
         description: 'Do you want to create a release?'
         required: true
@@ -73,12 +78,22 @@ jobs:
       lto_type: ${{ inputs.lto_type }}
       next_branch: ${{ inputs.next_branch }}
       next_branch_other: ${{ inputs.next_branch_other }}
+      
+  build-kernel-OnePlus12-6-1:
+    uses: ./.github/workflows/build-kernel-OnePlus12-6.1.yml
+    secrets: inherit
+    if: ${{ inputs.build_OnePlus12_6_1 }}
+    with:
+      lto_type: ${{ inputs.lto_type }}
+      next_branch: ${{ inputs.next_branch }}
+      next_branch_other: ${{ inputs.next_branch_other }}
      
   trigger-release:
     runs-on: ubuntu-latest
     needs:
         - build-kernel-a14-5-15
         - build-kernel-a14-6-1
+        - build-kernel-OnePlus12-6-1
     if: ${{ inputs.make_release }}
     env:
       REPO_OWNER: TheWildJames
