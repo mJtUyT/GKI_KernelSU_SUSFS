@@ -103,8 +103,7 @@ jobs:
           # Initialize and sync kernel source
           echo "Initializing and syncing kernel source..."
           FORMATTED_BRANCH="${{ matrix.android_version }}-${{ matrix.kernel_version }}-${{ matrix.os_patch_level }}"
-          $REPO init --depth=1 --u https://github.com/OnePlusOSS/kernel_manifest.git -b oneplus12_v.xml 
-
+          repo init -u https://github.com/OnePlusOSS/kernel_manifest.git -b refs/heads/oneplus/https://github.com/OnePlusOSS/kernel_manifest.git -b oneplus12_v.xml --depth=1
           # Sync repo and apply patches
           $REPO --version
           $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
@@ -251,7 +250,7 @@ jobs:
 
           echo "Applying SUSFS patches..."
 
-           cd kernel_platform
+cd kernel_platform
            cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
            cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch ./common/
            cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
