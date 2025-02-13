@@ -1,7 +1,17 @@
-name: Build OnePlus12 KernelSU
+name: Build OnePlus12 6.1 GKI Kernels
 
 on:
   workflow_call:  # This allows this workflow to be called from another workflow
+    inputs:
+      lto_type:
+        required: true
+        type: string
+      next_branch:
+        required: true
+        type: string
+      next_branch_other:
+        required: false
+        type: string
   
 jobs:
   build-kernel-a14-6-1-kernelsu-susfs:
@@ -68,16 +78,68 @@ jobs:
           $REPO --version
           $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
           
-      - name: Add KernelSU-Next
+      - name: Determine the branch for KernelSU & MKSU
+        if: ${{ inputs.kernelsu_variant == 'Official' || inputs.kernelsu_variant == 'MKSU' }}
+        run: |
+          if [[ "${{ inputs.kernelsu_branch }}" == "Stable" ]]; then
+            echo "BRANCH=-" >> $GITHUB_ENV
+          elif [[ "${{ inputs.kernelsu_branch }}" == "Dev" ]]; then
+            echo "BRANCH=-s main" >> $GITHUB_ENV
+          elif [[ "${{ inputs.kernelsu_branch }}" == "Other" && -n "${{ inputs.kernelsu_branch_other }}" ]]; then
+            echo "BRANCH=-s ${{ inputs.kernelsu_branch_other }}" >> $GITHUB_ENV
+          else
+            echo "Error: Custom branch not provided for 'Other'" >&2
+            exit 1
+          fi
+          
+      - name: Determine the branch for kernelsu-next
+        if: ${{ inputs.kernelsu_variant == 'Next' }}
+        run: |
+          if [[ "${{ inputs.kernelsu_branch }}" == "Stable" ]]; then
+            echo "BRANCH=-" >> $GITHUB_ENV
+          elif [[ "${{ inputs.kernelsu_branch }}" == "Dev" ]]; then
+            echo "BRANCH=-s next" >> $GITHUB_ENV
+          elif [[ "${{ inputs.kernelsu_branch }}" == "Other" && -n "${{ inputs.kernelsu_branch_other }}" ]]; then
+            echo "BRANCH=-s ${{ inputs.kernelsu_branch_other }}" >> $GITHUB_ENV
+          else
+            echo "Error: Custom branch not provided for 'Other'" >&2
+            exit 1
+          fi
+
+
+      - name: Add KernelSU-Official
+        if: ${{ inputs.kernelsu_variant == 'Official' }}
         run: |
           echo "Changing to configuration directory: $CONFIG..."
-          cd "$CONFIG/kernel_platform"
-          
-          echo "Adding KernelSU-Next..."
-          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
-          cd ./KernelSU-Next/kernel
-          sed -i 's/ccflags-y += -DKSU_VERSION=16/ccflags-y += -DKSU_VERSION=12321/' ./Makefile
+          cd "$CONFIG"
 
+          echo "Adding KernelSU..."
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+
+      - name: Add KernelSU-MKSU
+        if: ${{ inputs.kernelsu_variant == 'MKSU' }}
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          echo "Adding KernelSU..."
+          curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+
+          # Revert commit of remove pts_unix98_lookup_pre
+          cd KernelSU
+          git revert -m 1 $(git log --grep="remove devpts hook" --pretty=format:"%h") -n
+          KSU_VERSION=$(expr $(/usr/bin/git rev-list --count HEAD) "+" 12063)
+          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+          sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+          
+      - name: Add KernelSU-Next
+        if: ${{ inputs.kernelsu_variant == 'Next' }}
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          echo "Adding KernelSU..."
+          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
       - name: Run sed and perl Commands
         run: |
           echo "Changing to configuration directory: $CONFIG..."
