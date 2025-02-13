@@ -52,7 +52,7 @@ on:
 
 jobs:
 
-  build-kernel-a14-6-1:
+  build-kernel-OnePlus12-6-1:
     uses: ./.github/workflows/OnePlus12 KernelSU.yml
     secrets: inherit
     if: ${{ inputs.build_OnePlus12_6_1 }}
@@ -64,13 +64,13 @@ jobs:
   trigger-release:
     runs-on: ubuntu-latest
     needs:
-        - build-oneplus12-6-1-kernel
+        - build-kernel-OnePlus12-6-1
     if: ${{ inputs.make_release }}
     env:
-      REPO_OWNER: TheWildJames
+      REPO_OWNER: mJtUyT
       REPO_NAME: GKI_KernelSU_SUSFS
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RELEASE_NAME: "*TEST BUILD* GKI Kernels With KernelSU Next & SUSFS v1.5.4 *TEST BUILD*"
+      RELEASE_NAME: "*TEST BUILD* GKI Kernels With KernelSU Next & SUSFS v1.5.5 *TEST BUILD*"
       RELEASE_NOTES: |
         This release contains KernelSU Next and SUSFS v1.5.5
         
