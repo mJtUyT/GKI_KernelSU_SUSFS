@@ -15,7 +15,14 @@ on:
   
 jobs:
   build-kernel-a14-6-1-kernelsu-susfs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - android_version: "android14"
+            kernel_version: "6.1"
+            sub_level: "75"
+            os_patch_level: "2024-05"
 
     steps:
       - name: Maximize build space
@@ -23,7 +30,7 @@ jobs:
         with:
           root-reserve-mb: 8192
           temp-reserve-mb: 2048
-          swap-size-mb: 8192
+          swap-size-mb: 20000
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
