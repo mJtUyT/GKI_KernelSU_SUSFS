@@ -1,4 +1,4 @@
-name: Build OnePlus12 6.1 GKI Kernels
+name: Build OnePlus Susfs KernelSU
 
 on:
   workflow_call:  # This allows this workflow to be called from another workflow
