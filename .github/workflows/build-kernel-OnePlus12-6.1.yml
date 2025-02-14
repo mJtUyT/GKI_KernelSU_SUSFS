@@ -15,6 +15,7 @@ on:
   
 jobs:
   build-kernel-a14-6-1-kernelsu-susfs:
+    timeout-minutes: 180  # 设置超时为180分钟
     runs-on: ubuntu-22.04
     strategy:
       matrix:
