@@ -180,41 +180,24 @@ jobs:
           fi
 
 
-      - name: Add KernelSU-Official
-        if: ${{ inputs.kernelsu_variant == 'Official' }}
+      - name: Add KernelSU
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH         
-
-      - name: Add KernelSU-MKSU
-        if: ${{ inputs.kernelsu_variant == 'MKSU' }}
-        run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          cd "$CONFIG"
-
-          echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
-          
-      - name: Add KernelSU-MKSU-trilateral
-        if: ${{ inputs.kernelsu_variant == 'MKSU-trilateral' }}
-        run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          cd "$CONFIG"
-
-          echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/KernelSU/main/kernel/setup.sh" | bash $BRANCH
-          
-      - name: Add KernelSU-Next
-        if: ${{ inputs.kernelsu_variant == 'Next' }}
-        run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          cd "$CONFIG"
-
-          echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
+          if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
+            echo "Adding KernelSU Official..."
+            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
+            echo "Adding KernelSU Next..."
+            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
+            echo "Adding KernelSU MKSU..."
+            curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU-trilateral" ]; then
+            echo "Adding KernelSU MKSU-trilateral..."
+            curl -LSs "https://raw.githubusercontent.com/ShirkNeko/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          fi
 
       - name: Apply SUSFS Patches for KernelSU Variants
         run: |
