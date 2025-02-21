@@ -198,6 +198,15 @@ jobs:
           echo "Adding KernelSU..."
           curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           
+      - name: Add KernelSU-MKSU-trilateral
+        if: ${{ inputs.kernelsu_variant == 'MKSU-trilateral' }}
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG"
+
+          echo "Adding KernelSU..."
+          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          
       - name: Add KernelSU-Next
         if: ${{ inputs.kernelsu_variant == 'Next' }}
         run: |
