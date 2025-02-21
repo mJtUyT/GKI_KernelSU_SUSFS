@@ -39,7 +39,6 @@ on:
           - Official
           - MKSU
           - Next
-          - MKSU-trilateral
         default: official
       kernelsu_branch:
         description: "Choose ksu branch"
@@ -62,18 +61,18 @@ jobs:
     secrets: inherit
     if: ${{ inputs.build_a13_5_10 }}
     with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
+      lto_type: ${{ inputs.lto_type }}
+      next_branch: ${{ inputs.next_branch }}
+      next_branch_other: ${{ inputs.next_branch_other }}
 
   build-kernel-a13-5-15:
     uses: ./.github/workflows/build-kernel-a13-5.15.yml
     secrets: inherit
     if: ${{ inputs.build_a13_5_15 }}
     with:
-      kernelsu_variant: ${{ inputs.kernelsu_variant }}
-      kernelsu_branch: ${{ inputs.kernelsu_branch }}
-      kernelsu_branch_other: ${{ inputs.kernelsu_branch_other }}
+      lto_type: ${{ inputs.lto_type }}
+      next_branch: ${{ inputs.next_branch }}
+      next_branch_other: ${{ inputs.next_branch_other }}
      
   trigger-release:
     runs-on: ubuntu-latest
