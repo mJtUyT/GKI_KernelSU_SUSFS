@@ -275,14 +275,10 @@ jobs:
           cd ./KernelSU
           echo "Applying SUSFS patches..."
           patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
-            
-          echo "Applying MKSU specific SUSFS patch..."
-            cp ../../kernel_patches/mksu_susfs.patch ../KernelSU/
-            patch -p1 < mksu_susfs.patch
-          else
-            echo "Invalid KernelSU variant selected!"
-            exit 1
-          fi
+          
+          echo "Applying mksu_susfs.patch"
+          cp ../../kernel_patches/mksu_susfs.patch ../KernelSU/
+          patch -p1 < mksu_susfs.patch
 
           # Change to common directory and apply SUSFS patch
           cd ../common
@@ -312,7 +308,7 @@ jobs:
           echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -324,10 +320,10 @@ jobs:
 
           # Add additional tmpfs config setting
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
 
           # Remove check_defconfig
           sed -i 's/check_defconfig//' ./common/build.config.gki
+
 
 
       - name: Run sed and perl Commands
@@ -359,7 +355,6 @@ jobs:
           else
             rm -rf ./common/android/abi_gki_protected_exports_*
             sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
-            sed -i 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-Wild+"/' ./common/scripts/setlocalversion
             tools/bazel build --config=fast --lto=${{ inputs.lto_type }} //common:kernel_aarch64_dist
           fi
 
