@@ -279,23 +279,24 @@ jobs:
           echo "Applying SUSFS patches..."
 
           # Copy SUSFS patches
-          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch ./common/
-          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
-          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-          
-          cd ./KernelSU
-          echo "Applying SUSFS patches..."
-          patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
-          
-          echo "Applying mksu_susfs.patch"
-          cp ../../kernel_patches/mksu_susfs.patch ../KernelSU/
-          patch -p1 < mksu_susfs.patch
+            cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+            cd ./KernelSU
+            patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
+            
+            echo "Applying MKSU specific SUSFS patch..."
+            cp ../../kernel_patches/mksu_susfs.patch ../KernelSU/
+            patch -p1 < mksu_susfs.patch
+          else
+            echo "Invalid KernelSU variant selected!"
+            exit 1
+          fi
 
           # Change to common directory and apply SUSFS patch
           cd ../common
           patch -p1 < 50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch || true
-
+          cd ../KernelSU
+          patch -p1 < fix.patch
+          
       - name: Apply Hide Stuff Patches
         run: |
           echo "Changing to configuration directory: $CONFIG..."
