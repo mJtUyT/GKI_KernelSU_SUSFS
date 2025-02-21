@@ -39,6 +39,7 @@ on:
           - Official
           - MKSU
           - Next
+          - MKSU-trilateral
         default: official
       kernelsu_branch:
         description: "Choose ksu branch"
