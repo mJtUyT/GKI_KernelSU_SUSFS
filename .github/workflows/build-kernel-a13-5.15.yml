@@ -277,12 +277,12 @@ jobs:
           patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
             
           echo "Applying MKSU specific SUSFS patch..."
-          cp ../../kernel_patches/mksu_susfs.patch ../KernelSU/
-          patch -p1 < mksu_susfs.patch
-        else
-          echo "Invalid KernelSU variant selected!"
-          exit 1
-        fi
+            cp ../../kernel_patches/mksu_susfs.patch ../KernelSU/
+            patch -p1 < mksu_susfs.patch
+          else
+            echo "Invalid KernelSU variant selected!"
+            exit 1
+          fi
 
           # Change to common directory and apply SUSFS patch
           cd ../common
