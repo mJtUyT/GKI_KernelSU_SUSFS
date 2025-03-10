@@ -132,12 +132,12 @@ jobs:
           echo "Creating folder for configuration: $CONFIG..."
           mkdir -p "$CONFIG"
           cd "$CONFIG"
-          
+
           # Initialize and sync kernel source
           echo "Initializing and syncing kernel source..."
-          FORMATTED_BRANCH="${{ matrix.android_version }}-${{ matrix.kernel_version }}-${{ matrix.os_patch_level }}"
+          FORMATTED_BRANCH="${{ matrix.android_version }}-${{ matrix.kernel_version }}-${{ matrix.sub_level }}"
           $REPO init --depth=1 --u https://android.googlesource.com/kernel/manifest -b common-${FORMATTED_BRANCH} --repo-rev=v2.16
-          
+
           REMOTE_BRANCH=$(git ls-remote https://android.googlesource.com/kernel/common ${FORMATTED_BRANCH})
           DEFAULT_MANIFEST_PATH=.repo/manifests/default.xml
 
