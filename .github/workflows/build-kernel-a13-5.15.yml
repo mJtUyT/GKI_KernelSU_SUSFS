@@ -185,6 +185,9 @@ jobs:
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
+        
+          pwd
+          ls -al
           
           echo "Applying SUSFS patches..."
           
