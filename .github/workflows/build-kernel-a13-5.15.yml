@@ -165,7 +165,7 @@ jobs:
           fi
 
        - name: Add KernelSU-Official
-        if: ${{ inputs.kernelsu_variant == 'Official' }}
+        if [[ "${{ inputs.kernelsu_branch }}" == "Official" ]]
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
@@ -174,7 +174,7 @@ jobs:
           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           
       - name: Add KernelSU-MKSU
-        if: ${{ inputs.kernelsu_variant == 'MKSU' }}
+        if [[ "${{ inputs.kernelsu_branch }}" == "MKSU" }}
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
@@ -183,7 +183,7 @@ jobs:
           curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
           
       - name: Add KernelSU-Next
-        if: ${{ inputs.kernelsu_variant == 'Next' }}
+        if [[ "${{ inputs.kernelsu_branch }}" == "Next" }}
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
@@ -203,30 +203,35 @@ jobs:
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
+      - name: 为KernelSU应用susfs补丁
           if [ "${{ inputs.kernel_version }}" == "Official" ]; then
             echo "Applying SUSFS patches for Official KernelSU..."
             cd ./KernelSU
             cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
             patch -p1 --forward < 10_enable_susfs_for_ksu.patch
-          elif [ "${{ inputs.kernel_version }}" == "MKSU" ]; then
+            
+      - name: 为MKSU应用susfs补丁
+          if [ "${{ inputs.kernel_version }}" == "MKSU" ]; then
             echo "Applying SUSFS patches for MKSU..."
              cd ./KernelSU
             cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
             patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
             
-            echo "Applying MKSU specific SUSFS patch..."
+            echo "应用MKSU特有的susfs补丁"
             cp ../../kernel_patches/mksu/mksu_susfs.patch ../KernelSU/
             patch -p1 < mksu_susfs.patch
             cp ../../kernel_patches/mksu/fix.patch ./KernelSU/
             patch -p1 < fix.patch
-          elif [ "${{ inputs.kernel_version }}" == "Next" ]; then
+            
+      - name: 为KernelSU-Next应用susfs补丁
+          if [ "${{ inputs.kernel_version }}" == "Next" ]; then
             echo "Applying SUSFS patches for KernelSU-Next..."
             cd ./KernelSU-Next
             cp ../../kernel_patches/next/0001-kernel-patch-susfs-v1.5.5-to-KernelSU-Next-v1.0.5.patch ./
             patch -p1 --forward < 0001-kernel-patch-susfs-v1.5.5-to-KernelSU-Next-v1.0.5.patch || true
            
           else
-            echo "Invalid KernelSU variant selected!"
+            echo "选择的KernelSU种类无效"
             exit 1
           fi
 
