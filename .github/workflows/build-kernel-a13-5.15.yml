@@ -124,18 +124,18 @@ jobs:
           git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "gki-2.0"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
           git clone https://github.com/WildPlusKernel/kernel_patches.git
-
+      
       - name: Initialize and Sync Kernel Source
         run: |
           echo "Creating folder for configuration: $CONFIG..."
           mkdir -p "$CONFIG"
           cd "$CONFIG"
-          
+
           # Initialize and sync kernel source
           echo "Initializing and syncing kernel source..."
-          FORMATTED_BRANCH="${{ matrix.android_version }}-${{ matrix.kernel_version }}-${{ matrix.os_patch_level }}"
+          FORMATTED_BRANCH="${{ matrix.android_version }}-${{ matrix.kernel_version }}-${{ matrix.sub_level }}"
           $REPO init --depth=1 --u https://android.googlesource.com/kernel/manifest -b common-${FORMATTED_BRANCH} --repo-rev=v2.16
-          
+
           REMOTE_BRANCH=$(git ls-remote https://android.googlesource.com/kernel/common ${FORMATTED_BRANCH})
           DEFAULT_MANIFEST_PATH=.repo/manifests/default.xml
 
@@ -164,32 +164,21 @@ jobs:
             exit 1
           fi
 
-       - name: Add KernelSU-Official
-        if [[ "${{ inputs.kernelsu_branch }}" == "Official" ]]
+      - name: Add KernelSU
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
-          
-      - name: Add KernelSU-MKSU
-        if [[ "${{ inputs.kernelsu_branch }}" == "MKSU" }}
-        run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          cd "$CONFIG"
-
-          echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
-          
-      - name: Add KernelSU-Next
-        if [[ "${{ inputs.kernelsu_branch }}" == "Next" }}
-        run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          cd "$CONFIG"
-
-          echo "Adding KernelSU..."
-          curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
+          if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
+            echo "Adding KernelSU Official..."
+            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
+            echo "Adding KernelSU Next..."
+            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
+          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
+            echo "Adding KernelSU MKSU..."
+            curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+          fi
           
       - name: Apply SUSFS Patches for KernelSU Variants
         run: |
@@ -199,39 +188,34 @@ jobs:
           echo "Applying SUSFS patches..."
           
           # Copy SUSFS patches
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch ./common/
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
-      - name: 为KernelSU应用susfs补丁
-          if [ "${{ inputs.kernel_version }}" == "Official" ]; then
+          if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             echo "Applying SUSFS patches for Official KernelSU..."
             cd ./KernelSU
             cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
             patch -p1 --forward < 10_enable_susfs_for_ksu.patch
-            
-      - name: 为MKSU应用susfs补丁
-          if [ "${{ inputs.kernel_version }}" == "MKSU" ]; then
+          elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
+            echo "Applying SUSFS patches for KernelSU-Next..."
+            cd ./KernelSU-Next
+            cp ../../kernel_patches/next/0001-kernel-patch-susfs-v1.5.5-to-KernelSU-Next-v1.0.5.patch ./
+            patch -p1 --forward < 0001-kernel-patch-susfs-v1.5.5-to-KernelSU-Next-v1.0.5.patch || true
+          elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "Applying SUSFS patches for MKSU..."
              cd ./KernelSU
             cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
             patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
             
-            echo "应用MKSU特有的susfs补丁"
+            echo "Applying MKSU specific SUSFS patch..."
             cp ../../kernel_patches/mksu/mksu_susfs.patch ../KernelSU/
             patch -p1 < mksu_susfs.patch
             cp ../../kernel_patches/mksu/fix.patch ./KernelSU/
             patch -p1 < fix.patch
             
-      - name: 为KernelSU-Next应用susfs补丁
-          if [ "${{ inputs.kernel_version }}" == "Next" ]; then
-            echo "Applying SUSFS patches for KernelSU-Next..."
-            cd ./KernelSU-Next
-            cp ../../kernel_patches/next/0001-kernel-patch-susfs-v1.5.5-to-KernelSU-Next-v1.0.5.patch ./
-            patch -p1 --forward < 0001-kernel-patch-susfs-v1.5.5-to-KernelSU-Next-v1.0.5.patch || true
-           
           else
-            echo "选择的KernelSU种类无效"
+            echo "Invalid KernelSU variant selected!"
             exit 1
           fi
 
