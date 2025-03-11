@@ -214,6 +214,9 @@ jobs:
             cp ../../kernel_patches/mksu/fix.patch ../KernelSU/
             patch -p1 < fix.patch
             
+            cd ../common
+            patch -p1 < 50_add_susfs_in_gki-${{ matrix.android_version }}-${{ matrix.kernel_version }}.patch || true
+            
           else
             echo "Invalid KernelSU variant selected!"
             exit 1
