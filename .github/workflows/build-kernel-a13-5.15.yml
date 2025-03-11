@@ -212,7 +212,7 @@ jobs:
             cp ../../kernel_patches/mksu/mksu_susfs.patch ../KernelSU/
             patch -p1 < mksu_susfs.patch
             echo "该进度完成"
-            cp ../../kernel_patches/mksu/fix.patch ./KernelSU/
+            cp ../../kernel_patches/mksu/fix.patch ../KernelSU/
             patch -p1 < fix.patch
             echo "该进度完成"
           else
