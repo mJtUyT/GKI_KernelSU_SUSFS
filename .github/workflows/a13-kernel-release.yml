@@ -38,7 +38,7 @@ on:
         options:
           - Official
           - MKSU
-          - Next
+          - SukiSu Ultra
         default: official
       kernelsu_branch:
         description: "Choose ksu branch"
