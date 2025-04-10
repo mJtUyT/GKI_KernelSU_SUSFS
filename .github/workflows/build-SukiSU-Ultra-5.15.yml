@@ -152,8 +152,10 @@ jobs:
           
       - name: 运行sed进行修改
         run: |
+          echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
-          sed -i '$s|echo "\$res"|echo "-android13-8-susfs4ksu-mJtUyT"|' ./"$CONFIG"/common/scripts/setlocalversion
+
+          sed -i '$s|echo "\$res"|echo "-android13-8-susfs4ksu-mJtUyT"|' ./common/scripts/setlocalversion
      
       - name: Build Kernel
         working-directory: android-kernel
