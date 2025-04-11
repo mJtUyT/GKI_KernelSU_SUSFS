@@ -2,10 +2,6 @@ name: Build 5.15-GKI SukiSU-Ultra
 
 on:
   workflow_dispatch:  
-    inputs:
-      lto_type:
-        required: true
-        type: string
   
 jobs:
   build-kernel-a13-5-15-kernelsu-susfs:
@@ -148,7 +144,7 @@ jobs:
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev
+          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/main/kernel/setup.sh" | bash -s main
           
       - name: 运行sed进行修改
         run: |
@@ -161,10 +157,14 @@ jobs:
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
-          if [ -e build/build.sh ]; then
-            LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang"
+          echo "Building the kernel..."
+          if [ -f "build/build.sh" ]; then
+          
+          LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
           else
-            tools/bazel run --disk_cache=/home/runner/.cache/bazel --config=fast --config=stamp --lto=thin //common:kernel_aarch64_dist -- --dist_dir=dist
+            rm -rf ./common/android/abi_gki_protected_exports_*
+            sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
+            tools/bazel build --config=fast --lto=${{ inputs.lto_type }} //common:kernel_aarch64_dist
           fi
 
       - name: Create Bootimgs Folder and Copy Images
