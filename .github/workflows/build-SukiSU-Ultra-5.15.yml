@@ -297,11 +297,10 @@ jobs:
             echo "Applying hooks for SukiSU..."
             cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
             patch -p1 -F 3 < syscall_hooks.patch
-            
+          fi   
             #echo "应用lz4kd补丁"
             #cp ../../SukiSU_patch/other/lz4k_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
             #patch -p1 -F 3 < lz4kd.patch || true
-          fi
 
           
       - name: 应用隐藏某特征的补丁
