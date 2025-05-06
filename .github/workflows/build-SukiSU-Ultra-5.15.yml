@@ -4,7 +4,7 @@ permissions:
   actions: write   # Allows triggering actions
 
 on:
-  workflow_call: # This allows this workflow to be called from another workflow
+  workflow_dispatch: # This allows this workflow to be called from another workflow
     inputs:
       make_release:
         required: true
