@@ -449,14 +449,7 @@ jobs:
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          if [ ! -z ${{ inputs.version }} ]; then
-            echo "版本号不为空"
-            sed -i '$s|echo "\$res"|echo "-android13-8-susfs4ksu-mJtUyT"|' ./common/scripts/setlocalversion
-          else
-            echo "版本号为空"
-            sed -i '$s|echo "\$res"|echo "\$res"|' ./common/scripts/setlocalversion
-          fi
-
+          sed -i '$s|echo "\$res"|echo "-android13-8-susfs4ksu-mJtUyT"|' ./common/scripts/setlocalversion
 
           # Run perl command to modify UTS_VERSION
           perl -pi -e 's{UTS_VERSION="\$\(echo \$UTS_VERSION \$CONFIG_FLAGS \$TIMESTAMP \| cut -b -\$UTS_LEN\)"}{UTS_VERSION="#1 SMP PREEMPT Sat Apr 20 04:20:00 UTC 2024"}' ./common/scripts/mkcompile_h
@@ -488,7 +481,7 @@ jobs:
               tools/bazel build --disk_cache=/home/runner/.cache/bazel --config=fast --lto=thin //common:kernel_aarch64_dist || exit 1
             fi
             ccache --show-stats
-      - name: 修补 Image 文件 安卓12和安卓13(仅限sukisu)
+        - name: 修补 Image 文件 安卓12和安卓13(仅限sukisu)
         if: ${{ inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android12' || inputs.android_version == 'android13') }}
         run: |
           if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
