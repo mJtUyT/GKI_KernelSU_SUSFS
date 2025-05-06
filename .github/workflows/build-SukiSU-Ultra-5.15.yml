@@ -4,7 +4,7 @@ permissions:
   actions: write   # Allows triggering actions
 
 on:
-  workflow_dispatch: # This allows this workflow to be called from another workflow
+  workflow_call: # This allows this workflow to be called from another workflow
     inputs:
       make_release:
         required: true
@@ -28,10 +28,13 @@ on:
       kernelsu_branch:
         required: true
         type: string
-      kernelsu_branch_other:
+      # kernelsu_branch_other:
+      #   required: false
+      #   type: string
+      revision:
         required: false
         type: string
-      revision:
+      version:
         required: false
         type: string
 
@@ -71,7 +74,7 @@ jobs:
 
       - name: 配置 ccache
         run: |
-          mkdir -p ~/.cache/bazel # Ensure the directory exists
+          mkdir -p ~/.cache/bazel
           ccache --version
           ccache --max-size=2G
           ccache --set-config=compression=true
@@ -128,14 +131,14 @@ jobs:
         run: |
           echo "Cloning AnyKernel3 and other dependencies..."
 
-          # Define the branch names using the inputs values
+          ANYKERNEL_BRANCH="gki-2.0"
           SUSFS_BRANCH="gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}"
 
           # Debug print the branches
           echo "Using branch for SUSFS: $SUSFS_BRANCH"
 
           # Clone repositories using the branch names
-          git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "gki-2.0"
+          git clone https://github.com/WildPlusKernel/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
           git clone https://github.com/WildPlusKernel/kernel_patches.git
           # Sukisu的补丁仓库
@@ -174,23 +177,6 @@ jobs:
           $REPO --version
           $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
 
-      # - name: 复制文件
-      #   if: ${{ inputs.make_release == false }}
-      #   run: |
-      #     cp -r $CONFIG source-clean-$CONFIG
-
-      # - name: 上传资产
-      #   if: ${{ inputs.make_release == false }}
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: source-clean-${{ env.CONFIG }}
-      #     path: source-clean-${{ env.CONFIG }}
-
-      # - name: 移除文件
-      #   if: ${{ inputs.make_release == false }}
-      #   run: |
-      #     rm -rf source-clean-$CONFIG
-
       - name: 确定 KernelSU 的分支
         run: |
           if [[ "${{ inputs.kernelsu_branch }}" == "Stable(标准)" ]]; then
@@ -203,8 +189,6 @@ jobs:
               echo "BRANCH=-" >> $GITHUB_ENV
           elif [[ "${{ inputs.kernelsu_branch }}" == "Dev(开发)" && ( "${{ inputs.kernelsu_variant }}" == "SukiSU" ) ]]; then
               echo "BRANCH=-s susfs-dev" >> $GITHUB_ENV
-          elif [[ "${{ inputs.kernelsu_branch }}" == "Other(其他/指定)" && -n "${{ inputs.kernelsu_branch_other }}" ]]; then
-            echo "BRANCH=-s ${{ inputs.kernelsu_branch_other }}" >> $GITHUB_ENV
           else
             echo "Error: Custom branch not provided for 'Other(其他/指定)'" >&2
             exit 1
@@ -221,7 +205,6 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             echo "Adding KernelSU Next..."
             curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash $BRANCH
-            #curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "Adding KernelSU MKSU..."
             curl -LSs "https://raw.githubusercontent.com/5ec1cff/KernelSU/main/kernel/setup.sh" | bash $BRANCH
@@ -241,27 +224,22 @@ jobs:
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-          
-           #lz4k
-          cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux
-          cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib
-          cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto
   
           if [ "${{ inputs.kernelsu_variant }}" == "Official" ]; then
             echo "Applying SUSFS patches for Official KernelSU..."
             cd ./KernelSU
             cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
-            patch -p1 --forward < 10_enable_susfs_for_ksu.patch
+            patch -p1 --forward --fuzz=3 < 10_enable_susfs_for_ksu.patch
           elif [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
             echo "Applying SUSFS patches for KernelSU-Next..."
             cd ./KernelSU-Next
-            cp ../../kernel_patches/next/0001-kernel-patch-susfs-v1.5.5-to-KernelSU-Next-v1.0.5.patch ./
-            patch -p1 --forward < 0001-kernel-patch-susfs-v1.5.5-to-KernelSU-Next-v1.0.5.patch || true
+            cp ../../kernel_patches/next/kernel-patch-susfs-v1.5.7-to-KernelSU-Next.patch ./
+            patch -p1 --forward --fuzz=3 < kernel-patch-susfs-v1.5.7-to-KernelSU-Next.patch
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "Applying SUSFS patches for MKSU..."
              cd ./KernelSU
             cp ../../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./
-            patch -p1 --forward < 10_enable_susfs_for_ksu.patch || true
+            patch -p1 --forward --fuzz=3 < 10_enable_susfs_for_ksu.patch || true
             
             echo "Applying MKSU specific SUSFS patch..."
             cp ../../kernel_patches/mksu/mksu_susfs.patch ./
@@ -279,11 +257,15 @@ jobs:
             exit 1
           fi
 
-          # Change to common directory and apply common SUSFS patch
           cd ../common
-          patch -p1 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
-          
+          patch -p1 --fuzz=3 < 50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch || true
 
+          FORMATTED_BRANCH="${{ inputs.android_version }}-${{ inputs.kernel_version }}-${{ inputs.os_patch_level }}"
+          if [ "$FORMATTED_BRANCH" == "android15-6.6-2024-08" ] || [ "$FORMATTED_BRANCH" == "android15-6.6-2024-09" ]; then
+            echo "Applying fix 6.6.30 6.6.30&46 patches"
+            curl -LSs https://github.com/zzh20188/GKI_KernelSU_SUSFS/raw/refs/heads/fix/fix6.6.patch -o test.patch
+            patch -p1 < test.patch || true
+          fi
       - name: 应用新的HOOKS补丁
         run: |
           echo "Changing to configuration directory: $CONFIG..."
@@ -297,12 +279,28 @@ jobs:
             echo "Applying hooks for SukiSU..."
             cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
             patch -p1 -F 3 < syscall_hooks.patch
-          fi   
-            echo "应用lz4kd补丁"
-            cp ../../SukiSU_patch/other/zram/lz4k_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
-            patch -p1 -F 3 < lz4kd.patch || true
-
+          fi
           
+      - name: 复制源文件&应用LZ4KD&ZSTDN补丁
+        run: |
+          echo "Changing to configuration directory: $CONFIG..."
+          cd "$CONFIG/common"
+          cp -r ../../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
+          cp -r ../../SukiSU_patch/other/zram/lz4k/lib/* ./lib/
+          cp -r ../../SukiSU_patch/other/zram/lz4k/crypto/* ./crypto/
+          cp -r ../../SukiSU_patch/other/zram/zstdn ./lib/
+          cp -r ../../SukiSU_patch/other/zram/lz4k_oplus ./lib/
+          
+          cp ../../SukiSU_patch/other/zram/zram_patch/${{ inputs.kernel_version }}/lz4kd.patch ./
+          echo "正在打lz4kd补丁"
+          patch -p1 -F 3 < lz4kd.patch || true
+          echo '完成LZ4KD补丁'
+
+          cp ../../SukiSU_patch/other/zram/zram_patch/${{ inputs.kernel_version }}/zstdn.patch ./
+          echo "正在打zstdn补丁"
+          patch -p1 -F 3 < zstdn.patch || true
+          echo '完成ZSTDN补丁'
+
       - name: 应用隐藏某特征的补丁
         run: |
           echo "Changing to configuration directory: $CONFIG..."
@@ -315,10 +313,10 @@ jobs:
             cp ../../kernel_patches/69_hide_stuff.patch ./
             patch -p1 -F 3 < 69_hide_stuff.patch
           fi
-
-      - name: LZ4KD配置
+      
+      - name: LZ4KD&ZSTDN配置
         run: |
-          echo "写入LZ4KD config依赖"
+          echo "写入LZ4KD&ZSTDN config依赖"
           CONFIG_FILE="$CONFIG/common/arch/arm64/configs/gki_defconfig"
 
           if [ "${{ inputs.kernel_version }}" = "5.10" ]; then
@@ -330,7 +328,15 @@ jobs:
           fi
 
           if [ "${{ inputs.kernel_version }}" != "6.6" ] && [ "${{ inputs.kernel_version }}" != "5.10" ]; then
-            sed -i 's/CONFIG_ZSMALLOC=m/CONFIG_ZSMALLOC=y/g' "$CONFIG_FILE"
+            # sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' "$CONFIG_FILE"
+            if grep -q "CONFIG_ZSMALLOC" -- "$CONFIG_FILE"; then
+                echo "提示：文件 $CONFIG_FILE 包含字符串 CONFIG_ZSMALLOC。"
+                sed -i 's/CONFIG_ZSMALLOC=m/CONFIG_ZSMALLOC=y/g' "$CONFIG_FILE"
+            else
+                echo "警告：文件 $CONFIG_FILE 不包含字符串 CONFIG_ZSMALLOC。"
+                echo "CONFIG_ZSMALLOC=y" >> "$CONFIG_FILE"
+            fi
+                
             sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' "$CONFIG_FILE"
           fi
 
@@ -341,11 +347,13 @@ jobs:
 
           if [ "${{ inputs.android_version }}" = "android14" ] || [ "${{ inputs.android_version }}" = "android15" ]; then
             sed -i 's/"drivers\/block\/zram\/zram\.ko",//g; s/"mm\/zsmalloc\.ko",//g' "$CONFIG/common/modules.bzl"
+            sed -i '/^_ARM64_GKI_MODULES_LIST = \[/a \    "lib/zstdn/crypto_zstdn.ko",' "$CONFIG/common/modules.bzl"
+            echo "CONFIG_MODULE_SIG_FORCE=n" >> "$CONFIG_FILE"
             echo 'Android14_Bazel:已修复zram&zsmalloc'
-          elif [ "${{ inputs.kernel_version }}" = "5.15" ]; then
+          elif [ "${{ inputs.kernel_version }}" = "5.10" ] || [ "${{ inputs.kernel_version }}" = "5.15" ]; then
             rm "$CONFIG/common/android/gki_aarch64_modules"
-            touch "$CONFIG/common/android/gki_aarch64_modules"
-            echo '5.15:已修复zram&zsmalloc'
+            echo 'lib/zstdn/crypto_zstdn.ko' > $CONFIG/common/android/gki_aarch64_modules
+            echo '5.10&5.15:已修复zram&zsmalloc'
           fi
 
           if grep -q "CONFIG_ZSMALLOC=y" "$CONFIG_FILE" && grep -q "CONFIG_ZRAM=y" "$CONFIG_FILE"; then
@@ -353,13 +361,35 @@ jobs:
             echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
             echo "CONFIG_CRYPTO_LZ4KD=y" >> "$CONFIG_FILE"
             echo "CONFIG_CRYPTO_842=y" >> "$CONFIG_FILE"
+            echo "CONFIG_CRYPTO_ZSTDN=m" >> "$CONFIG_FILE"
+            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$CONFIG_FILE"
           fi
-            
+          
+      
+      - name: 添加所有管理器
+        run: |
+          cd "$CONFIG"
+          case "${{ inputs.kernelsu_variant }}" in
+            "Official")
+              echo "Applying Manager patch for Official KernelSU..."
+              #cp ../kernel_patches/ksu/manager.patch ./
+              ;;
+            "NEXT")
+              echo "Applying Manager patch for KernelSU Next..."
+              cd KernelSU-Next
+              cp ../../kernel_patches/next/manager.patch ./
+              ;;
+            "MKSU")
+              echo "Applying Manager patch for MKSU..."
+              #cp ../kernel_patches/mksu/manager.patch .//
+              ;;
+          esac
+          patch -p1 --fuzz=3 < manager.patch || echo "No Manager Patch"
+
       - name: 添加SUSFS配置设置
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
-
           echo "Adding configuration settings to gki_defconfig..."
 
           # Add KSU configuration settings
@@ -376,6 +406,26 @@ jobs:
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
           fi
+                    # Add additional tmpfs config setting
+          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
+
+          # Add additional config setting
+          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
+
+          # Add BBR Config
+          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig 
+          echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TCP_CONG_BIC=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/gki_defconfig 
+
+          # Remove check_defconfig
+          sed -i 's/check_defconfig//' ./common/build.config.gki
+
           # Add SUSFS configuration settings
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -392,32 +442,20 @@ jobs:
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
 
-          # if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
-          #   echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
-          # else
-          #   echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # fi
-          
-          # Add additional tmpfs config setting
-          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
-
-          # Add additional config setting
-          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
-
-          # Remove check_defconfig
-          sed -i 's/check_defconfig//' ./common/build.config.gki
       
       - name: 配置内核名称
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          sed -i '$s|echo "\$res"|echo "-android13-8-susfs4ksu-mJtUyT"|' ./common/scripts/setlocalversion
+          if [ ! -z ${{ inputs.version }} ]; then
+            echo "版本号不为空"
+            sed -i '$s|echo "\$res"|echo "-android13-8-susfs4ksu-mJtUyT"|' ./common/scripts/setlocalversion
+          else
+            echo "版本号为空"
+            sed -i '$s|echo "\$res"|echo "\$res"|' ./common/scripts/setlocalversion
+          fi
 
 
           # Run perl command to modify UTS_VERSION
@@ -427,27 +465,11 @@ jobs:
           if [ -f "build/build.sh" ]; then
             sed -i 's/-dirty//' ./common/scripts/setlocalversion
           else
+            sed -i '/^[[:space:]]*"protected_exports_list"[[:space:]]*:[[:space:]]*"android\/abi_gki_protected_exports_aarch64",$/d' ./common/BUILD.bazel
             rm -rf ./common/android/abi_gki_protected_exports_*
             sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
             sed -E -i '/^CONFIG_LOCALVERSION=/ s/(.*)"$/\1"/' ./common/arch/arm64/configs/gki_defconfig
           fi
-
-      # - name: 复制文件
-      #   if: ${{ inputs.make_release == false }}
-      #   run: |
-      #     cp -r $CONFIG source-patched-$CONFIG
-
-      # - name: 上传资产
-      #   if: ${{ inputs.make_release == false }}
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: source-patched-${{ env.CONFIG }}
-      #     path: source-patched-${{ env.CONFIG }}
-
-      # - name: 移除文件
-      #   if: ${{ inputs.make_release == false }}
-      #   run: |
-      #     rm -rf source-patched-$CONFIG
 
       - name: Build with retry
         uses: nick-fields/retry@v3
@@ -461,7 +483,7 @@ jobs:
             cd "$CONFIG"
             echo "Building the kernel..."
             if [ -f "build/build.sh" ]; then
-              LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang" || exit 1
+              LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang" || exit 1
             else
               tools/bazel build --disk_cache=/home/runner/.cache/bazel --config=fast --lto=thin //common:kernel_aarch64_dist || exit 1
             fi
@@ -494,7 +516,7 @@ jobs:
             cd ../../..
           fi
             
-      - name: 创建Bootimgs文件夹并复制图像
+      - name: 创建Bootimgs文件夹并复制镜像
         if: ${{ inputs.android_version == 'android12' || inputs.android_version == 'android13' }}
         run: |
           echo "Changing to configuration directory: $CONFIG..."
@@ -509,7 +531,7 @@ jobs:
           # Create gzip of the Image file
           gzip -n -k -f -9 ./Image > ./Image.gz
 
-      - name: 创建Bootimgs文件夹并复制图像
+      - name: 创建Bootimgs文件夹并复制镜像
         if: ${{ inputs.android_version == 'android14' || inputs.android_version == 'android15' }}
         run: |
           echo "Changing to configuration directory: $CONFIG..."
@@ -609,22 +631,4 @@ jobs:
           echo "Building boot.img"
           $MKBOOTIMG --header_version 4 --kernel Image --output boot.img
           $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot.img
-
-          echo "Building boot-gz.img"
-          $MKBOOTIMG --header_version 4 --kernel Image.gz --output boot-gz.img
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-gz.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-gz.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-gz.img
-
-          echo "Building boot-lz4.img"
-          $MKBOOTIMG --header_version 4 --kernel Image.lz4 --output boot-lz4.img
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-lz4.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-lz4.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-lz4.img
-
-      - name: 上传编译资产
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-${{ env.CONFIG }}
-          path: |
-            *.zip
-            *.img
+          cp ./boot.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-
