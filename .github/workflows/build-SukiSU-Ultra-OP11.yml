@@ -85,8 +85,8 @@ jobs:
           repo init --depth=1 --u https://github.com/OnePlusOSS/kernel_manifest.git -b oneplus_11_t.xml --repo-rev=v2.16
 
           # Sync repo and apply patches
-          repo --version
-          repo --trace sync -c -j$(nproc --all) --no-tags --fail-fast
+          $REPO --version
+          $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
       
       - name: 添加 KernelSU
         run: |
