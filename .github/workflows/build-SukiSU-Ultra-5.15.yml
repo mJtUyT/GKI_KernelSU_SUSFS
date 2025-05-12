@@ -9,7 +9,7 @@ on:
       make_release:
         required: true
         type: boolean
-        default: true
+        default: false
       android_version:
         required: true
         type: string
