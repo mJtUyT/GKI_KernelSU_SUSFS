@@ -281,7 +281,7 @@ jobs:
             patch -p1 -F 3 < syscall_hooks.patch
           fi
           
-      - name: 复制源文件&应用LZ4KD&ZSTDN补丁
+      - name: 复制源文件&应用LZ4KD补丁
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG/common"
@@ -296,11 +296,6 @@ jobs:
           patch -p1 -F 3 < lz4kd.patch || true
           echo '完成LZ4KD补丁'
 
-          cp ../../SukiSU_patch/other/zram/zram_patch/${{ inputs.kernel_version }}/zstdn.patch ./
-          echo "正在打zstdn补丁"
-          patch -p1 -F 3 < zstdn.patch || true
-          echo '完成ZSTDN补丁'
-
       - name: 应用隐藏某特征的补丁
         run: |
           echo "Changing to configuration directory: $CONFIG..."
@@ -314,7 +309,7 @@ jobs:
             patch -p1 -F 3 < 69_hide_stuff.patch
           fi
       
-      - name: LZ4KD&ZSTDN配置
+      - name: LZ4KD配置
         run: |
           echo "写入LZ4KD&ZSTDN config依赖"
           CONFIG_FILE="$CONFIG/common/arch/arm64/configs/gki_defconfig"
@@ -361,7 +356,6 @@ jobs:
             echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
             echo "CONFIG_CRYPTO_LZ4KD=y" >> "$CONFIG_FILE"
             echo "CONFIG_CRYPTO_842=y" >> "$CONFIG_FILE"
-            echo "CONFIG_CRYPTO_ZSTDN=m" >> "$CONFIG_FILE"
             echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$CONFIG_FILE"
           fi
           
