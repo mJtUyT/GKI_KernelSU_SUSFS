@@ -63,6 +63,7 @@ jobs:
 
       - name: 克隆 AnyKernel3 和其他依赖项
         run: |
+          cd ~
           echo "Cloning AnyKernel3 and other dependencies..."
 
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-android13-5.15
@@ -70,7 +71,7 @@ jobs:
           # Sukisu的补丁仓库
           git clone https://github.com/ShirkNeko/SukiSU_patch.git
           
-          cp /SukiSU_patch/AnyKernel3/ ./
+          cp -r ./SukiSU_patch/AnyKernel3/ ./
 
       - name: 初始化和同步内核源代码
         run: |
