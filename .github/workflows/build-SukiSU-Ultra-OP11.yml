@@ -18,8 +18,8 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 16384
-          temp-reserve-mb: 8192
+          root-reserve-mb: 8192
+          temp-reserve-mb: 2048
           swap-size-mb: 8192
           remove-dotnet: "true"
           remove-android: "true"
@@ -28,6 +28,14 @@ jobs:
 
       - name: 安装 ccache
         run: sudo apt update && sudo apt upgrade -y && sudo apt install -y ccache python3 git curl
+
+      - name: 配置 ccache
+        run: |
+          mkdir -p ~/.cache/bazel
+          ccache --version
+          ccache --max-size=2G
+          ccache --set-config=compression=true
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
       
       - name: 缓存工具链
         id: cache-toolchain
@@ -41,8 +49,6 @@ jobs:
       - name: 下载工具链（如果未找到缓存）
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
-          cd ~
-          sudo rm -r ./*
           AOSP_MIRROR=https://android.googlesource.com
           BRANCH=main-kernel-build-2024
           git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth 1 kernel-build-tools
@@ -80,7 +86,7 @@ jobs:
 
           # Sync repo and apply patches
           $REPO --version
-          $REPO sync
+          $REPO --trace sync -c -j$(nproc --all) --no-tags --fail-fast
       
       - name: 添加 KernelSU
         run: |
