@@ -41,6 +41,8 @@ jobs:
       - name: 下载工具链（如果未找到缓存）
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
+          cd ~
+          sudo rm -r ./*
           AOSP_MIRROR=https://android.googlesource.com
           BRANCH=main-kernel-build-2024
           git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth 1 kernel-build-tools
