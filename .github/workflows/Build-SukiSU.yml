@@ -325,11 +325,12 @@ jobs:
               echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$CONFIG_FILE"
             fi
           fi
-
+        
       - name: Build kernel
         if: ${{ github.event.inputs.CPU == 'sm8650' || github.event.inputs.CPU == 'sm7675' }}
         run: |
           cd kernel_workspace
+          cp /home/runner/work/GKI_KernelSU_SUSFS/GKI_KernelSU_SUSFS/kernel_workspace/kernel_platform/out/msm-kernel-kalama-gki/gki_kernel/common/modules.order kernel_platform/common/android/gki_aarch64_modules
           ./kernel_platform/build_with_bazel.py -t ${{ github.event.inputs.CPUD }} ${{ github.event.inputs.BUILD_METHOD }}
           
       - name: Fallback build kernel
