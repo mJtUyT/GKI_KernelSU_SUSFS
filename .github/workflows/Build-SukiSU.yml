@@ -199,7 +199,6 @@ jobs:
           cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux
           cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib
           cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto
-          cp -r ../SukiSU_patch/other/zram/zstdn ./common/lib/
           cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
           fi
 
