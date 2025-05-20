@@ -317,7 +317,7 @@ jobs:
             # elif [ "${{ github.event.inputs.KERNEL_VERSION }}" = "5.10" ] || [ "${{ github.event.inputs.KERNEL_VERSION }}" = "5.15" ]; then
               # rm "$CONFIG/common/android/gki_aarch64_modules"
               # touch "$CONFIG/common/android/gki_aarch64_modules"
-            # fi
+            fi
 
             if grep -q "CONFIG_ZSMALLOC=y" "$CONFIG_FILE" && grep -q "CONFIG_ZRAM=y" "$CONFIG_FILE"; then
               echo "CONFIG_CRYPTO_LZ4HC=y" >> "$CONFIG_FILE"
