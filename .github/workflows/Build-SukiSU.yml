@@ -315,8 +315,8 @@ jobs:
               fi
               echo "CONFIG_MODULE_SIG_FORCE=n" >> "$CONFIG_FILE"
             elif [ "${{ github.event.inputs.KERNEL_VERSION }}" = "5.10" ] || [ "${{ github.event.inputs.KERNEL_VERSION }}" = "5.15" ]; then
-              rm "$CONFIG/common/android/gki_aarch64_modules"
-              touch "$CONFIG/common/android/gki_aarch64_modules"
+              # rm "$CONFIG/common/android/gki_aarch64_modules"
+              # touch "$CONFIG/common/android/gki_aarch64_modules"
             fi
 
             if grep -q "CONFIG_ZSMALLOC=y" "$CONFIG_FILE" && grep -q "CONFIG_ZRAM=y" "$CONFIG_FILE"; then
@@ -342,8 +342,8 @@ jobs:
          LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ github.event.inputs.CPUD }} ${{ github.event.inputs.BUILD_METHOD }}
 
          # 重试
-         # cp /home/runner/work/GKI_KernelSU_SUSFS/GKI_KernelSU_SUSFS/kernel_workspace/kernel_platform/out/msm-kernel-kalama-gki/gki_kernel/common/modules.order common/android/gki_aarch64_modules
-         # LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ github.event.inputs.CPUD }} ${{ github.event.inputs.BUILD_METHOD }}
+         cp /home/runner/work/GKI_KernelSU_SUSFS/GKI_KernelSU_SUSFS/kernel_workspace/kernel_platform/out/msm-kernel-kalama-gki/gki_kernel/common/modules.order kernel_platform/common/android/gki_aarch64_modules
+         LTO=thin SYSTEM_DLKM_RE_SIGN=0 BUILD_SYSTEM_DLKM=0 KMI_SYMBOL_LIST_STRICT_MODE=0 ./kernel_platform/oplus/build/oplus_build_kernel.sh ${{ github.event.inputs.CPUD }} ${{ github.event.inputs.BUILD_METHOD }}
          
       - name: Make AnyKernel3
         run: |
