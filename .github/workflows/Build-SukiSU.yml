@@ -223,7 +223,7 @@ jobs:
           echo "vfs_patch完成"
           fi
 
-      - name: Apply LZ4KD&ZSTDN
+      - name: Apply LZ4KD&LZ4K_OPLUS
         run: |
           cd kernel_workspace/kernel_platform/common
           if [ "${{ github.event.inputs.ZRAM }}" = "true" ]; then
@@ -235,7 +235,7 @@ jobs:
             cp ../../SukiSU_patch/other/zram/zram_patch/${{ github.event.inputs.KERNEL_VERSION }}/lz4k_oplus.patch ./
             echo "正在打lz4k_oplus补丁"
             patch -p1 -F 3 < lz4k_oplus.patch || true
-            echo '完成ZSTDN补丁'
+            echo '完成lz4k_oplus补丁'
           fi
 
       # 配置信息
@@ -314,10 +314,10 @@ jobs:
                 sed -i 's/"drivers\/block\/zram\/zram\.ko",//g; s/"mm\/zsmalloc\.ko",//g' "./common/modules.bzl"
               fi
               echo "CONFIG_MODULE_SIG_FORCE=n" >> "$CONFIG_FILE"
-            elif [ "${{ github.event.inputs.KERNEL_VERSION }}" = "5.10" ] || [ "${{ github.event.inputs.KERNEL_VERSION }}" = "5.15" ]; then
+            # elif [ "${{ github.event.inputs.KERNEL_VERSION }}" = "5.10" ] || [ "${{ github.event.inputs.KERNEL_VERSION }}" = "5.15" ]; then
               # rm "$CONFIG/common/android/gki_aarch64_modules"
               # touch "$CONFIG/common/android/gki_aarch64_modules"
-            fi
+            # fi
 
             if grep -q "CONFIG_ZSMALLOC=y" "$CONFIG_FILE" && grep -q "CONFIG_ZRAM=y" "$CONFIG_FILE"; then
               echo "CONFIG_CRYPTO_LZ4HC=y" >> "$CONFIG_FILE"
