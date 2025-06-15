@@ -315,7 +315,7 @@ jobs:
       
       - name: LZ4KD配置
         run: |
-          echo "写入LZ4KD&ZSTDN config依赖"
+          echo "写入LZ4KD&LZ4K_OPLUS config依赖"
           CONFIG_FILE="$CONFIG/common/arch/arm64/configs/gki_defconfig"
 
           if [ "${{ inputs.kernel_version }}" = "5.10" ]; then
@@ -447,8 +447,6 @@ jobs:
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
 
-          sed -i '$s|echo "\$res"|echo "-android13-8-susfs4ksu-mJtUyT"|' ./common/scripts/setlocalversion
-
           # Run perl command to modify UTS_VERSION
           perl -pi -e 's{UTS_VERSION="\$\(echo \$UTS_VERSION \$CONFIG_FLAGS \$TIMESTAMP \| cut -b -\$UTS_LEN\)"}{UTS_VERSION="#1 SMP PREEMPT Sat Apr 20 04:20:00 UTC 2024"}' ./common/scripts/mkcompile_h
           
@@ -492,20 +490,6 @@ jobs:
             mv oImage Image
             cd ../../../..
           fi
-
-      - name: 修补 Image 文件 安卓14和安卓15(仅限sukisu)
-        if: ${{ inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
-        run: |
-          if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
-            echo "Patching Image file..."
-            cd "$CONFIG/bazel-bin/common/kernel_aarch64/"
-            curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
-            chmod 777 patch
-            ./patch
-            rm -rf Image
-            mv oImage Image
-            cd ../../..
-          fi
             
       - name: 创建Bootimgs文件夹并复制镜像
         if: ${{ inputs.android_version == 'android12' || inputs.android_version == 'android13' }}
@@ -518,21 +502,6 @@ jobs:
           cp ./$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image.lz4 ./bootimgs
           cp ./$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image ./
           cp ./$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image.lz4 ./
-
-          # Create gzip of the Image file
-          gzip -n -k -f -9 ./Image > ./Image.gz
-
-      - name: 创建Bootimgs文件夹并复制镜像
-        if: ${{ inputs.android_version == 'android14' || inputs.android_version == 'android15' }}
-        run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          mkdir bootimgs
-
-          echo "Creating bootimgs folder and copying images..."
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./
 
           # Create gzip of the Image file
           gzip -n -k -f -9 ./Image > ./Image.gz
@@ -560,56 +529,6 @@ jobs:
           mv ../Image.gz ./Image.gz
           zip -r "../$ZIP_NAME" ./*
           rm ./Image.gz
-
-      - name: 运行boot镜像 ${{ inputs.android_version }} 编译脚本
-        if: ${{ inputs.android_version == 'android12' }}
-        run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          cd bootimgs
-
-          GKI_URL=https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-"${{ inputs.os_patch_level }}"_"${{ inputs.revision }}".zip
-          FALLBACK_URL=https://dl.google.com/android/gki/gki-certified-boot-android12-5.10-2023-01_r1.zip
-
-          # Check if the GKI URL is available
-          echo "Checking if GKI kernel URL is reachable: $GKI_URL"
-          status=$(curl -sL -w "%{http_code}" "$GKI_URL" -o /dev/null)
-
-          if [ "$status" = "200" ]; then
-              echo "[+] Downloading from GKI_URL"
-              curl -Lo gki-kernel.zip "$GKI_URL"
-          else
-              echo "[+] $GKI_URL not found, using $FALLBACK_URL"
-              curl -Lo gki-kernel.zip "$FALLBACK_URL"
-          fi
-
-          # Unzip the downloaded kernel and remove the zip
-          echo "Unzipping the downloaded kernel..."
-          unzip gki-kernel.zip && rm gki-kernel.zip
-
-          echo "Unpacking boot.img..."
-          FULL_PATH=$(pwd)/boot-5.10.img
-          echo "Unpacking using: $FULL_PATH"
-
-          echo "Running unpack_bootimg.py..."
-          $UNPACK_BOOTIMG --boot_img="$FULL_PATH"
-
-          echo "Building Image.gz"
-          gzip -n -k -f -9 ./Image > ./Image.gz
-
-          echo "Building boot.img"
-          $MKBOOTIMG --header_version 4 --kernel Image --output boot.img --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level "${{ inputs.os_patch_level }}"
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot.img
-
-          echo "Building boot-gz.img"
-          $MKBOOTIMG --header_version 4 --kernel Image.gz --output boot-gz.img --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level "${{ inputs.os_patch_level }}"
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-gz.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-gz.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-gz.img
-
-          echo "Building boot-lz4.img"
-          $MKBOOTIMG --header_version 4 --kernel Image.lz4 --output boot-lz4.img --ramdisk out/ramdisk --os_version 12.0.0 --os_patch_level "${{ inputs.os_patch_level }}"
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-lz4.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-lz4.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-lz4.img
 
       - name: 运行boot镜像 ${{ inputs.android_version }} 编译脚本
         if: ${{ inputs.android_version == 'android13' || inputs.android_version == 'android14' || inputs.android_version == 'android15' }}
