@@ -321,8 +321,7 @@ jobs:
             patch -p1 -F 3 < syscall_hooks.patch
           fi
 
-      - name: 复制源文件 & 应用LZ4KD & ZSTDN补丁
-        if: ${{ inputs.use_zram }}
+      - name: 复制源文件 & 应用LZ4KD & LZ4K_OPLUS补丁
         run: |
           echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG/common"
@@ -355,7 +354,6 @@ jobs:
           fi
 
       - name: LZ4KD & Lz4k_oplus配置
-        if: ${{ inputs.use_zram }}
         run: |
           set -x
           set -e
@@ -561,8 +559,8 @@ jobs:
               cp ./out/arch/arm64/boot/Image* ../bazel-bin/common/kernel_aarch64/
             fi
             
-      - name: 修补 Image 文件 安卓12和安卓13(仅限sukisu)
-        if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android12' || inputs.android_version == 'android13') }}
+      - name: 修补 Image 文件 安卓13(仅限sukisu)
+        if: ${{ inputs.kernelsu_variant == 'SukiSU' && ( inputs.android_version == 'android13') }}
         run: |
           if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
             echo "Patching Image file..."
@@ -575,46 +573,15 @@ jobs:
             cd ../../../..
           fi
 
-      - name: 修补 Image 文件 安卓14和安卓15(仅限sukisu)
-        if: ${{ inputs.use_kpm && inputs.kernelsu_variant == 'SukiSU' && (inputs.android_version == 'android14' || inputs.android_version == 'android15') }}
-        run: |
-          if [ "${{ inputs.kernel_version }}" != "6.6" ]; then
-            echo "Patching Image file..."
-            cd "$CONFIG/bazel-bin/common/kernel_aarch64/"
-            curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm/patch_linux" -o patch
-            chmod 777 patch
-            ./patch
-            rm -rf Image
-            mv oImage Image
-            cd ../../..
-          fi
-
       - name: 创建Bootimgs文件夹并复制镜像
-        if: ${{ inputs.android_version == 'android12' || inputs.android_version == 'android13' }}
+        if: ${{ inputs.android_version == 'android13' }}
         run: |
           echo "更改为配置目录: $CONFIG..."
           mkdir bootimgs
 
           echo "Creating bootimgs folder and copying images..."
           cp ./$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image ./bootimgs
-          cp ./$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image.lz4 ./bootimgs
           cp ./$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image ./
-          cp ./$CONFIG/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image.lz4 ./
-
-          # Create gzip of the Image file
-          gzip -n -k -f -9 ./Image > ./Image.gz
-
-      - name: 创建Bootimgs文件夹并复制镜像
-        if: ${{ inputs.android_version == 'android14' || inputs.android_version == 'android15' }}
-        run: |
-          echo "更改为配置目录: $CONFIG..."
-          mkdir bootimgs
-
-          echo "Creating bootimgs folder and copying images..."
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./
 
           # Create gzip of the Image file
           gzip -n -k -f -9 ./Image > ./Image.gz
@@ -632,7 +599,7 @@ jobs:
           rm ./Image
 
       - name: 运行boot镜像 ${{ inputs.android_version }} 编译脚本
-        if: ${{ inputs.android_version == 'android13' || inputs.android_version == 'android14' || inputs.android_version == 'android15' }}
+        if: ${{ inputs.android_version == 'android13' }}
         run: |
           cd bootimgs
 
