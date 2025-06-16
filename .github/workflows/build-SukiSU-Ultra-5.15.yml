@@ -315,7 +315,7 @@ jobs:
       
       - name: LZ4KD配置
         run: |
-          echo "写入LZ4KD&LZ4K_OPLUS config依赖"
+          echo "写入LZ4KD&ZSTDN config依赖"
           CONFIG_FILE="$CONFIG/common/arch/arm64/configs/gki_defconfig"
 
           if [ "${{ inputs.kernel_version }}" = "5.10" ]; then
@@ -386,25 +386,25 @@ jobs:
 
       - name: 添加SUSFS配置设置
         run: |
-          echo "Changing to configuration directory: $CONFIG..."
+          echo "更改为配置目录: $CONFIG..."
           cd "$CONFIG"
           echo "Adding configuration settings to gki_defconfig..."
 
           # Add KSU configuration settings
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
+
           if [ "${{ inputs.kernelsu_variant }}" == "Next" ]; then
-            echo "CONFIG_KSU_WITH_KPROBES=n" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_KPROBES_HOOK=n" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
           elif [ "${{ inputs.kernelsu_variant }}" == "SukiSU" ]; then
             echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
-
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
           elif [ "${{ inputs.kernelsu_variant }}" == "MKSU" ]; then
             echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-                    # Add additional tmpfs config setting
+          
+          # Add additional tmpfs config setting
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
 
@@ -414,15 +414,12 @@ jobs:
           echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
 
           # Add BBR Config
-          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig 
+          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_NET_SCH_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_BIC=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/gki_defconfig 
-
-          # Remove check_defconfig
-          sed -i 's/check_defconfig//' ./common/build.config.gki
+          echo "CONFIG_TCP_CONG_HTCP=n" >> ./common/arch/arm64/configs/gki_defconfig
 
           # Add SUSFS configuration settings
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -440,12 +437,17 @@ jobs:
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
+# Remove check_defconfig
+          sed -i 's/check_defconfig//' ./common/build.config.gki
 
       
       - name: 配置内核名称
         run: |
           echo "Changing to configuration directory: $CONFIG..."
           cd "$CONFIG"
+
+          sed -i '$s|echo "\$res"|echo "-android13-8-susfs4ksu-mJtUyT"|' ./common/scripts/setlocalversion
 
           # Run perl command to modify UTS_VERSION
           perl -pi -e 's{UTS_VERSION="\$\(echo \$UTS_VERSION \$CONFIG_FLAGS \$TIMESTAMP \| cut -b -\$UTS_LEN\)"}{UTS_VERSION="#1 SMP PREEMPT Sat Apr 20 04:20:00 UTC 2024"}' ./common/scripts/mkcompile_h
@@ -542,16 +544,6 @@ jobs:
           $MKBOOTIMG --header_version 4 --kernel Image --output boot.img
           $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
           cp ./boot.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot.img
-
-          echo "Building boot-gz.img"
-          $MKBOOTIMG --header_version 4 --kernel Image.gz --output boot-gz.img
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-gz.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-gz.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-gz.img
-
-          echo "Building boot-lz4.img"
-          $MKBOOTIMG --header_version 4 --kernel Image.lz4 --output boot-lz4.img
-          $AVBTOOL add_hash_footer --partition_name boot --partition_size $((64 * 1024 * 1024)) --image boot-lz4.img --algorithm SHA256_RSA2048 --key $BOOT_SIGN_KEY_PATH
-          cp ./boot-lz4.img ../${{ inputs.android_version }}-${{ inputs.kernel_version }}.${{ inputs.sub_level }}-${{ inputs.os_patch_level }}-boot-lz4.img
 
       - name: 上传编译资产
         uses: actions/upload-artifact@v4
