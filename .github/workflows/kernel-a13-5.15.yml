@@ -1,4 +1,4 @@
-name: Build-A13-5.15
+name: Build-A13-5.15Kernel
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
   actions: write   # Allows triggering actions
