@@ -1,4 +1,4 @@
-name: Android 15 6.6
+name: Build-A15-6.6Kernel
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
   actions: write   # Allows triggering actions
