@@ -1,4 +1,4 @@
-name: 编译内核a13-5-15
+name: Android13-5.15Kernel
 
 permissions:
   contents: write  # Allow writing to repository contents (for pushing tags)
