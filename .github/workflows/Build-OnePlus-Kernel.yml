@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       CPU:
+        type: choice
         description: "分支"
         required: true
         default: sm8550
