@@ -353,7 +353,6 @@ jobs:
           ./patch_linux
           rm -f Image
           mv oImage Image
-          cp Image $GITHUB_WORKSPACE/AnyKernel3/Image
           
       - name: Make AnyKernel3
         run: |
