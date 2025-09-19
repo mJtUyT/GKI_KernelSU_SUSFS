@@ -44,16 +44,6 @@ on:
           - oneplus_ace5_pro
           - GitHub有bug可能不显示最后一项,误使用此项
           
-      名称/时间：
-      version:
-        description: '自定义版本名(如5.15.167后面的字符/留空则使用默认版本号)'
-        required: false
-        type: string
-      build_time:
-        description: '设置内核构建时间(格式见仓库说明)'
-        required: false
-        type: string
-        
       CPUD:
         type: choice
         description: "处理器代号"
@@ -85,6 +75,16 @@ on:
          - "5.15"
          - "6.1"
          - "6.6"
+         
+      version:
+        description: '自定义版本名(如5.15.167后面的字符/留空则使用默认版本号)'
+        required: false
+        type: string
+      build_time:
+        description: '设置内核构建时间(格式见仓库说明)'
+        required: false
+        type: string
+        
       BUILD_METHOD:
         type: choice
         description: "编译方式"
