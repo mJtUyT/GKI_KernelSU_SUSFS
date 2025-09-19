@@ -43,6 +43,15 @@ on:
           - oneplus_13t
           - oneplus_ace5_pro
           - GitHub有bug可能不显示最后一项,误使用此项
+      version:
+        description: '自定义版本名(如5.15.167后面的字符/留空则使用默认版本号)'
+        required: false
+        type: string
+      build_time:
+        description: '设置内核构建时间(格式见仓库说明)'
+        required: false
+        type: string
+        
       CPUD:
         type: choice
         description: "处理器代号"
@@ -276,6 +285,64 @@ jobs:
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
           fi
 
+      - name: 配置内核构时间/删除dirty字符
+        run: |
+          echo "更改为配置目录: $CONFIG..."
+          cd "$CONFIG"
+
+          # 初始化
+          CURRENT_TIME=""
+
+          if [ ! -z "${{ inputs.build_time }}" ]; then
+            echo "构建时间不为空"
+            date -d "${{ inputs.build_time }}" >/dev/null 2>&1 || echo "警告: 变量 '${{ inputs.build_time }}' 不是一个有效的日期格式！"
+            CURRENT_TIME="${{ inputs.build_time }}"
+          else
+            echo "构建时间为空，使用当前时间"
+            CURRENT_TIME=$(date -u +"%a %b %d %H:%M:%S UTC %Y")
+          fi
+          
+          echo "CURRENT_TIME=$CURRENT_TIME"
+
+          # 设置构建时间为上方的 `CURRENT_TIME` 变量 (5系)
+          perl -pi -e "s{UTS_VERSION=\"\\\$\(echo \\\$UTS_VERSION \\\$CONFIG_FLAGS \\\$TIMESTAMP \\| cut -b -\\\$UTS_LEN\)\"}{UTS_VERSION=\"#1 SMP PREEMPT $CURRENT_TIME\"}" ./common/scripts/mkcompile_h
+          if [ -f "build/build.sh" ]; then
+            echo "5系:删除dirty字符串"
+            sed -i 's/-dirty//' ./common/scripts/setlocalversion
+          else
+          # 设置构建时间 (6.1+)
+            sed -i "s/build-timestamp = \$(or \$(KBUILD_BUILD_TIMESTAMP), \$(build-timestamp-auto))/build-timestamp = \"$CURRENT_TIME\"/" ./common/init/Makefile
+          # 删除导出文件
+            sed -i '/^[[:space:]]*"protected_exports_list"[[:space:]]*:[[:space:]]*"android\/abi_gki_protected_exports_aarch64",$/d' ./common/BUILD.bazel
+            rm -rf ./common/android/abi_gki_protected_exports_*
+          # 去除dirty块
+            sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
+          fi
+
+      - name: 配置内核名称(常规构建)
+        if: ${{ !inputs.fast }}
+        run: |
+          echo "更改为配置目录: $CONFIG..."
+          cd "$CONFIG"
+
+          if [ ! -z ${{ inputs.version }} ]; then
+            echo "版本号不为空"
+            sed -i '$s|echo "\$res"|echo "${{ inputs.version }}"|' ./common/scripts/setlocalversion
+            sed -i '/^CONFIG_LOCALVERSION=/ s/="\([^"]*\)"/="${{ inputs.version }}"/' ./common/arch/arm64/configs/gki_defconfig
+          elif [ ! -f "build/build.sh" ]; then
+            echo "版本号为空,如果使用bazel编译,且如果使用bazel则加上kmi"
+            cd ./common
+
+            # 6.1
+            kmi="-android14-11-g$(git rev-parse --verify HEAD | cut -c1-13)"
+            echo "KMI=$kmi"
+            sed -i "\$s|echo \"\$res\"|echo \"$kmi\"|" ./scripts/setlocalversion
+            # 6.6
+            kmi="-g$(git rev-parse --verify HEAD | cut -c1-13)-4k"
+            sed -i "/^CONFIG_LOCALVERSION=/ s/=\"[^\"]*\"/=\"${kmi}\"/" ./arch/arm64/configs/gki_defconfig
+            echo "KMI=$kmi"
+          fi
+          
           # Remove check_defconfig
           sed -i 's/check_defconfig//' ./common/build.config.gki
 
